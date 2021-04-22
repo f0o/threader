@@ -1,79 +1,87 @@
+# Turbo-Pancake
 
+## Table of Contents
+* [Getting Started](#getting-started)
+* [About](#about)
+* [Usage](#usage)
 
-## Threader
+## Getting Started
 
-### Info:
-Threader executes a given command (-run) in x parallel threads. It can be used to
-just execute the Command a defined number of times (-runs) or to pass input given
-by STDIN split by a delimiter and provide each result part as \\$INPUTSTR param to
-your -run command. 
+### Requirements
+* GNU Make
+* Golang `>=1.12`
 
-Threader is shipped with /bin/bash as only dependency. 
-
-### Install.
-#### All
-```sh
-$ git clone https://github.com/voodooEntity/threader
-$ cd threader 
+### Compiling
 ```
-#### If you want to build it yourself with go installed
-```sh
-$ make && make build && make install 
-```
-#### If you want to use the shipped binary simply download it and execute (currently only debian64bit build)
-```sh
-$ sudo cp bin/deb64/threader /usr/bin/threader 
+~# make
 ```
 
-### Args: 
-* -run \"yourcommand\" 
-  * Can include \\$INPUTSTR \\$INPUTID \\$THREADID
-* -runs INT 
-  * Amount of run executions to be done if no input is given
-* -delimiter \"delimiterstring\" 
-  * String to split stdin given input up to single command inputstr , default delimiter=\"\\n\"
-* -verbose on 
-  * Sets threaders core output to verbose mode for debugging purposes
-* -threads INT 
-  * Define a number of threads to be used for parallel execution, default threads=amount of cpus
-### Vars: 
-The following vars can be used in your execution command.
-* \\$INPUTSTR    
-  * This variable will include a single input part provided by the result of splitting the STDIN input by -delimiter string.
-* \\$INPUTID     
-  * This variable will include a the id of the given \\$INPUTSTR. This variable is only unique for each thread, not in total.
-* \\$THREADID    
-  * This variable will include a the id of the thread executing the current command. It can be used to create unique identifiers combined with \\$INPUTID
-
-
-
-### Usage:
-
-##### Running a command without input 100 times in 4 threads
- ```sh
-$ threader -run "curl http://some.domain.com > /dev/null" -runs 100 -threads 4
+### Install:
 ```
-##### Running a command without input 100 times auto thread amount detection (by cpu count)
- ```sh
-$ threader -run "curl http://some.domain.com > /dev/null" -runs 100
-```
-##### Running a command with input from a file (f.e. 1 url per line)
- ```sh
-$ cat urllist.txt | threader -run "curl \$INPUTSTR > /dev/null"
-```
-##### Running a command with input from cli and custom delimiter
- ```sh
-$ echo "/etc,/home,/srv" | threader -run "stat \$INPUTSTR" -delimiter "," 
-```
-##### Running a command with input from a cli command
- ```sh
-$ ls -1 / | threader -run "stat /\$INPUTSTR"
-```
-##### Get the total size of each directory in / (using function output, dynamic amount of threads, default delimiter \n )
- ```sh
-$ ls -D1 / | threader -run "du -h /\$INPUTSTR | tail -1"
+~# make install
 ```
 
+### Test:
+```
+~# make test
+```
 
+## About
 
+Inspired and Originates from [@voodooEntity's Threader](https://github.com/voodooEntity/threader)
 
+However, this is a Non-Compatible Fork and barely shares any of the original code. You could call it a complete rewrite.
+
+In fact, the original Threader project and this one share a total of 40 lines of code, most of them are the golang imports.
+
+Because of this the tool has been renamed to `Turbo Pancake` with permission of the original author to avoid ambiguity.
+
+## Usage
+
+### Command Line Interface
+
+Using the CLI Utility is very straight forward.
+
+```
+~# turbo-pancake -h
+Usage of turbo-pancake:
+  -command string
+        Command to execute
+  -d    Debug Output
+  -delimiter string
+        Input Delimiter, as fmt.Sprintf (default "\\n")
+  -out-format string
+        Output Format, as fmt.Printf (default "%s\\n")
+  -threads int
+        Amount of threads to use (default 1)
+```
+
+|Option|Description|
+|------|-----------|
+|`-command`|Almost arbitrary shell code to execute. Heavily depends on the workers' environments|
+|`-d`|Flag to enable Debug Mode. This will spam a lot.|
+|`-delimiter`|String or sequence to delimit the STDIN Input to distribute work|
+|`-out-format`|fmt.Printf Parsable string to format Outputs by|
+|`-threads`|Amount of Workers to keep running|
+
+#### Variables Provided to `Command`
+
+|Variable|Content|
+|--------|-------|
+|`$INPUT`|Input passed to the Worker|
+|`$BASEINPUT`|Base64 Encoded `$INPUT`|
+|`$JOBID`|UUIDv4 unique JobID used to identify and trace the current Job|
+|`$WORKERID`|UUIDv4 unique WokerID used to identify and trace the Worker executing the Job|
+|`$COMMAND`|Original Command that will be executed by the Worker|
+
+### Examples
+
+```
+~# echo -n '1,2,3' | turbo-pancake -delimiter ',' -threads 2 -command 'echo -n $INPUT;sleep $((3-$INPUT))' -out-format '%s'
+231
+~#
+```
+
+### Networked Interface
+
+TBA
